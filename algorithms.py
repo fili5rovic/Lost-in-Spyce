@@ -50,7 +50,7 @@ class Algorithm:
         self.container = [Node(state, None)]
         while self.container:
             node = self.get_next_from_container()
-            print(node.state, end='\n\n')
+            # print(node.state, end='\n\n')
             if node.state.is_goal_state():
                 return node.get_actions()
             else:
@@ -102,12 +102,26 @@ class Red(Algorithm):
         return self.container.pop(0)
 
 class Black(Algorithm):
-
     def sort_by_cost(self, node):
         return node.cost
 
     def update_container(self, node):
+        self.container.extend(self.create_successors(node))
         self.container.sort(key=self.sort_by_cost)
+
+    def get_next_from_container(self):
+        return self.container.pop(0)
+
+class White(Algorithm):
+    def sort_a_star(self, node):
+        manhattan_distance = 0
+        for x,y in node.action:
+            manhattan_distance += abs(x - y)
+        return node.cost + manhattan_distance
+
+    def update_container(self, node):
+        self.container.extend(self.create_successors(node))
+        self.container.sort(key=self.sort_a_star)
 
     def get_next_from_container(self):
         return self.container.pop(0)
