@@ -57,15 +57,15 @@ class Algorithm:
         return None
 
     @abstractmethod
+    def create_successors(self, node):
+        pass
+
+    @abstractmethod
     def update_container(self, node):
         pass
 
     @abstractmethod
     def get_next_from_container(self):
-        pass
-
-    @abstractmethod
-    def create_successors(self, node):
         pass
 
 
@@ -86,11 +86,32 @@ class Blue(Algorithm):
 
     # successors are added before the others
     def update_container(self, node):
-        self.container.extend(self.create_successors(node))
+        self.container = self.container + self.create_successors(node)
 
     # since stack is used, we pop the element
     def get_next_from_container(self):
         return self.container.pop()
+
+
+class Red(Algorithm):
+    def create_successors(self, node):
+        successors = []
+        for legal_action in reversed(node.state.get_legal_actions()):
+            next_state = node.state.generate_successor_state(legal_action)
+
+            if node.state_exists_in_parents(next_state):
+                continue
+
+            next_node = Node(next_state, legal_action)
+            node.add_child(next_node)
+            successors.append(next_node)
+        return successors
+
+    def update_container(self, node):
+        self.container = self.create_successors(node) + self.container
+
+    def get_next_from_container(self):
+        return self.container.pop(0)
 
 
 class ExampleAlgorithm(Algorithm):
@@ -102,3 +123,12 @@ class ExampleAlgorithm(Algorithm):
             path.append(action)
             state = state.generate_successor_state(action)
         return path
+
+    def update_container(self, node):
+        pass
+
+    def get_next_from_container(self):
+        pass
+
+    def create_successors(self, node):
+        pass
