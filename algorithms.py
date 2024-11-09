@@ -1,4 +1,7 @@
 import random
+from abc import abstractclassmethod, abstractmethod
+
+from state import State
 
 
 class Node:
@@ -9,12 +12,10 @@ class Node:
         self.cost = 0
         self.parent = None
 
-
     def add_child(self, child):
-        self.children.insert(0, child)
+        self.children.append(child)
         child.parent = self
-        child.cost = child.parent.cost + 0
-
+        child.cost = child.parent.cost + State.get_action_cost(child.action)
 
     def get_parents(self):
         parents = []
@@ -24,19 +25,47 @@ class Node:
             current = current.parent
         return reversed(parents)
 
-
     def get_actions(self):
         actions = []
         for parent in self.get_parents():
-            if(parent.action == None):
+            if (parent.action == None):
                 continue
             actions.append(parent.action)
         actions.append(self.action)
         return actions
 
+    def state_exists_in_parents(self, state):
+        parent_node = self
+        while parent_node is not None:
+            if parent_node.state == state:
+                return True
+            parent_node = parent_node.parent
+        return False
+
 
 class Algorithm:
+    container = []
+
     def get_path(self, state):
+        self.container = [Node(state, None)]
+        while len(self.container) > 0:
+            node = self.get_next_from_container()
+            if node.state.is_goal_state():
+                return node.get_actions()
+            else:
+                self.update_container(node)
+        return None
+
+    @abstractmethod
+    def update_container(self, node):
+        pass
+
+    @abstractmethod
+    def get_next_from_container(self):
+        pass
+
+    @abstractmethod
+    def create_successors(self, node):
         pass
 
 
@@ -52,29 +81,24 @@ class ExampleAlgorithm(Algorithm):
 
 
 class Blue(Algorithm):
-    def get_path(self, state):
-        stack = [Node(state, None)]
-        while len(stack) > 0:
-            node = stack.pop(0)
-            if node.state.is_goal_state():
-                return node.get_actions()
-            else:
-                successors = []
-                for legal_action in node.state.get_legal_actions():
-                    next_state = node.state.generate_successor_state(legal_action)
+    # if it's not goal state, create successors for given node
+    def create_successors(self, node):
+        successors = []
+        for legal_action in node.state.get_legal_actions():
+            next_state = node.state.generate_successor_state(legal_action)
 
-                    if self.already_exists_in_parents(next_state, node):
-                        continue
+            if node.state_exists_in_parents(next_state):
+                continue
 
-                    next_node = Node(next_state, legal_action)
-                    node.add_child(next_node)
-                    successors.append(next_node)
-                stack = successors + stack
-        return None
+            next_node = Node(next_state, legal_action)
+            node.add_child(next_node)
+            successors.append(next_node)
+        return successors
 
-    def already_exists_in_parents(self, next_state, parent_node):
-        while parent_node is not None:
-            if parent_node.state == next_state:
-                return True
-            parent_node = parent_node.parent
-        return False
+    # successors are added before the others
+    def update_container(self, node):
+        self.container = self.create_successors(node) + self.container
+
+    # since stack is used, we pop the element
+    def get_next_from_container(self):
+        return self.container.pop(0)
