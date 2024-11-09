@@ -48,7 +48,7 @@ class Algorithm:
 
     def get_path(self, state):
         self.container = [Node(state, None)]
-        while len(self.container) > 0:
+        while self.container:
             node = self.get_next_from_container()
             if node.state.is_goal_state():
                 return node.get_actions()
@@ -69,22 +69,11 @@ class Algorithm:
         pass
 
 
-class ExampleAlgorithm(Algorithm):
-    def get_path(self, state):
-        path = []
-        while not state.is_goal_state():
-            possible_actions = state.get_legal_actions()
-            action = possible_actions[random.randint(0, len(possible_actions) - 1)]
-            path.append(action)
-            state = state.generate_successor_state(action)
-        return path
-
-
 class Blue(Algorithm):
     # if it's not goal state, create successors for given node
     def create_successors(self, node):
         successors = []
-        for legal_action in node.state.get_legal_actions():
+        for legal_action in reversed(node.state.get_legal_actions()):
             next_state = node.state.generate_successor_state(legal_action)
 
             if node.state_exists_in_parents(next_state):
@@ -97,8 +86,19 @@ class Blue(Algorithm):
 
     # successors are added before the others
     def update_container(self, node):
-        self.container = self.create_successors(node) + self.container
+        self.container.extend(self.create_successors(node))
 
     # since stack is used, we pop the element
     def get_next_from_container(self):
-        return self.container.pop(0)
+        return self.container.pop()
+
+
+class ExampleAlgorithm(Algorithm):
+    def get_path(self, state):
+        path = []
+        while not state.is_goal_state():
+            possible_actions = state.get_legal_actions()
+            action = possible_actions[random.randint(0, len(possible_actions) - 1)]
+            path.append(action)
+            state = state.generate_successor_state(action)
+        return path
