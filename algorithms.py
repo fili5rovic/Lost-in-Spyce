@@ -4,23 +4,25 @@ from abc import abstractmethod
 import config
 from state import State
 
+import heapq
+
 
 class Node:
     def __init__(self, state, action):
         self.state = state
         self.action = action
-        self.children = []
         self.cost = 0
         self.cost_heuristic = 0
         self.parent = None
 
     def add_child(self, child, is_heuristic_algorithm):
-        self.children.append(child)
         child.parent = self
         child.cost = child.parent.cost + State.get_action_cost(child.action)
         if is_heuristic_algorithm:
             child.cost_heuristic = child.parent.cost_heuristic + self.calc_heuristic(child.state)
             print(child.cost_heuristic)
+
+
     def get_parents(self):
         parents = []
         current = self
@@ -119,8 +121,6 @@ class Algorithm:
     @abstractmethod
     def get_next_from_container(self):
         pass
-
-
 
 
 # Uses DFS
