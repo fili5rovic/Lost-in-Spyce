@@ -1,5 +1,6 @@
 import random
 from abc import abstractmethod
+from collections import deque
 
 import config
 from state import State
@@ -141,7 +142,6 @@ class Blue(Algorithm):
 
             self.visited.add(state_key)
 
-
             for action in reversed(node.state.get_legal_actions()):
                 next_state = node.state.generate_successor_state(action)
                 if next_state.spaceships not in self.visited:
@@ -161,31 +161,40 @@ class Blue(Algorithm):
 
 # Uses BFS
 class Red(Algorithm):
-
     def __init__(self):
         super().__init__()
         self.visited = set()
 
     def get_path(self, state):
-        self.container = [Node(state, None)]
+        start_node = Node(state, None)
+        self.container = deque([start_node])
+
         while self.container:
-            node = self.get_next_from_container()
-            if node.state.is_goal_state():
+            node = self.container.popleft()
+
+            if node.state.spaceships == node.state.goals:
                 return node.get_actions()
 
-            if node.state.get_state('S') in self.visited:
+            state_key = node.state.spaceships
+            if state_key in self.visited:
                 continue
 
-            self.visited.add(node.state.get_state('S'))
-            self.update_container(node)
+            self.visited.add(state_key)
+
+            for action in node.state.get_legal_actions():
+                next_state = node.state.generate_successor_state(action)
+                if next_state.spaceships not in self.visited:
+                    next_node = Node(next_state, action)
+                    next_node.parent = node
+                    self.container.append(next_node)
+
         return None
 
     def update_container(self, node):
-        self.container.extend(self.create_successors(node))
+        pass
 
-    # since queue is used, we get the first element
     def get_next_from_container(self):
-        return self.container.pop(0)
+        pass
 
 # Uses Branch n bound
 class Black(Algorithm):
