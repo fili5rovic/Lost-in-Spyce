@@ -1,6 +1,5 @@
 import random
 from abc import abstractmethod
-from collections import deque
 
 import config
 from state import State
@@ -92,8 +91,9 @@ class Algorithm:
             node = self.get_next_from_container()
             if node.state.is_goal_state():
                 return node.get_actions()
-            else:
-                self.update_container(node)
+
+            self.update_container(node)
+
         return None
 
     def create_successors(self, node):
@@ -122,9 +122,29 @@ class Algorithm:
 # Uses DFS
 class Blue(Algorithm):
 
+    def __init__(self):
+        super().__init__()
+        self.visited = set()
+
+    def get_path(self, state):
+        self.container = [Node(state, None)]
+        while self.container:
+            node = self.get_next_from_container()
+            if node.state.is_goal_state():
+                return node.get_actions()
+
+            if node.state.get_state('S') in self.visited:
+                continue
+
+            self.visited.add(node.state.get_state('S'))
+            self.update_container(node)
+        return None
+
+
     # we need to reverse it, because of stack
     def update_container(self, node):
-        self.container = self.container + list(reversed(self.create_successors(node)))
+        self.container.extend(list(reversed(self.create_successors(node))))
+
 
     # since stack is used, we pop the element
     def get_next_from_container(self):
@@ -133,6 +153,24 @@ class Blue(Algorithm):
 
 # Uses BFS
 class Red(Algorithm):
+
+    def __init__(self):
+        super().__init__()
+        self.visited = set()
+
+    def get_path(self, state):
+        self.container = [Node(state, None)]
+        while self.container:
+            node = self.get_next_from_container()
+            if node.state.is_goal_state():
+                return node.get_actions()
+
+            if node.state.get_state('S') in self.visited:
+                continue
+
+            self.visited.add(node.state.get_state('S'))
+            self.update_container(node)
+        return None
 
     def update_container(self, node):
         self.container.extend(self.create_successors(node))
