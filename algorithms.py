@@ -1,5 +1,6 @@
 import random
 from abc import abstractmethod
+from collections import deque
 
 import config
 from state import State
@@ -15,6 +16,9 @@ class Node:
         self.cost_heuristic = 0
         self.parent = None
 
+    def __lt__(self, other):
+        return (self.cost + self.cost_heuristic) < (other.cost + other.cost_heuristic)
+
     def add_child(self, child, is_heuristic_algorithm):
         child.parent = self
         child.cost = child.parent.cost + State.get_action_cost(child.action)
@@ -22,22 +26,14 @@ class Node:
             child.cost_heuristic = child.parent.cost_heuristic + self.calc_heuristic(child.state)
             print(child.cost_heuristic)
 
-
-    def get_parents(self):
-        parents = []
-        current = self
-        while current.parent:
-            parents.append(current.parent)
-            current = current.parent
-        return reversed(parents)
-
     def get_actions(self):
         actions = []
-        for parent in self.get_parents():
-            if parent.action is None:
-                continue
-            actions.append(parent.action)
-        actions.append(self.action)
+        current = self
+        while current.parent:
+            if current.action is not None:
+                actions.append(current.action)
+            current = current.parent
+        actions.reverse()
         return actions
 
     def state_exists_in_parents(self, state):
@@ -139,7 +135,7 @@ class Blue(Algorithm):
 class Red(Algorithm):
 
     def update_container(self, node):
-        self.container = self.container + self.create_successors(node)
+        self.container.extend(self.create_successors(node))
 
     # since queue is used, we get the first element
     def get_next_from_container(self):
@@ -153,13 +149,9 @@ class Black(Algorithm):
         self.best_costs = {}
 
     def get_next_from_container(self):
-        return self.container.pop(0)
+        return heapq.heappop(self.container)
 
     def update_container(self, node):
-        self.dynamically_add_successors(node)
-        self.container.sort(key=lambda node1: node1.cost)
-
-    def dynamically_add_successors(self, node):
         successors = self.create_successors(node)
 
         for successor in successors:
@@ -170,8 +162,7 @@ class Black(Algorithm):
                     continue
 
             self.best_costs[num] = successor.cost
-            self.container.append(successor)
-
+            heapq.heappush(self.container, successor)
 
 # Uses A*
 class White(Algorithm):
@@ -182,13 +173,9 @@ class White(Algorithm):
         _is_heuristic = True
 
     def get_next_from_container(self):
-        return self.container.pop(0)
+        return heapq.heappop(self.container)
 
     def update_container(self, node):
-        self.container.extend(self.create_successors(node))
-        self.container.sort(key=lambda node1: node1.cost + node1.cost_heuristic)
-
-    def dynamically_add_successors(self, node):
         successors = self.create_successors(node)
         for successor in successors:
             state = successor.state
@@ -198,8 +185,7 @@ class White(Algorithm):
                     continue
 
             self.best_costs[num] = successor.cost + successor.cost_heuristic
-            self.container.append(successor)
-
+            heapq.heappush(self.container, successor)
 
 class ExampleAlgorithm(Algorithm):
     def get_path(self, state):
