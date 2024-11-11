@@ -68,9 +68,7 @@ class Node:
         rows = config.N
         cols = config.M
         num = str(bin(decimal_number))[2:]
-        prefix = '0' * (rows * cols - len(num))
-        string = prefix + num
-        string = reversed(string)
+        string = reversed(num)
         coords = []
         col_num = 0
         row_num = 0
@@ -85,8 +83,10 @@ class Node:
 
 
 class Algorithm:
-    container = []
-    _is_heuristic = False
+
+    def __init__(self):
+        self.container = []
+        self._is_heuristic = False
 
     def get_path(self, state):
         self.container = [Node(state, None)]
@@ -148,26 +148,57 @@ class Red(Algorithm):
 # Uses Branch n bound
 class Black(Algorithm):
 
-    def update_container(self, node):
-        self.container.extend(self.create_successors(node))
-        self.container.sort(key=lambda node1: node1.cost)
+    def __init__(self):
+        super().__init__()
+        self.best_costs = {}
 
     def get_next_from_container(self):
         return self.container.pop(0)
 
+    def update_container(self, node):
+        self.dynamically_add_successors(node)
+        self.container.sort(key=lambda node1: node1.cost)
+
+    def dynamically_add_successors(self, node):
+        successors = self.create_successors(node)
+
+        for successor in successors:
+            state = successor.state
+            num = state.get_state('S')
+            if num in self.best_costs:
+                if successor.cost >= self.best_costs[num]:
+                    continue
+
+            self.best_costs[num] = successor.cost
+            self.container.append(successor)
+
 
 # Uses A*
 class White(Algorithm):
-    _is_heuristic = True
+
+    def __init__(self):
+        super().__init__()
+        self.best_costs = {}
+        _is_heuristic = True
+
+    def get_next_from_container(self):
+        return self.container.pop(0)
 
     def update_container(self, node):
         self.container.extend(self.create_successors(node))
         self.container.sort(key=lambda node1: node1.cost + node1.cost_heuristic)
 
-    def get_next_from_container(self):
-        return self.container.pop(0)
+    def dynamically_add_successors(self, node):
+        successors = self.create_successors(node)
+        for successor in successors:
+            state = successor.state
+            num = state.get_state('S')
+            if num in self.best_costs:
+                if successor.cost >= self.best_costs[num]:
+                    continue
 
-
+            self.best_costs[num] = successor.cost + successor.cost_heuristic
+            self.container.append(successor)
 
 
 class ExampleAlgorithm(Algorithm):
