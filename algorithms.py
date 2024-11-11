@@ -121,34 +121,42 @@ class Algorithm:
 
 # Uses DFS
 class Blue(Algorithm):
-
     def __init__(self):
         super().__init__()
         self.visited = set()
 
     def get_path(self, state):
-        self.container = [Node(state, None)]
+        start_node = Node(state, None)
+        self.container = [start_node]
+
         while self.container:
-            node = self.get_next_from_container()
-            if node.state.is_goal_state():
+            node = self.container.pop()
+
+            if node.state.spaceships == node.state.goals:
                 return node.get_actions()
 
-            if node.state.get_state('S') in self.visited:
+            state_key = node.state.spaceships
+            if state_key in self.visited:
                 continue
 
-            self.visited.add(node.state.get_state('S'))
-            self.update_container(node)
+            self.visited.add(state_key)
+
+
+            for action in reversed(node.state.get_legal_actions()):
+                next_state = node.state.generate_successor_state(action)
+                if next_state.spaceships not in self.visited:
+                    next_node = Node(next_state, action)
+                    next_node.parent = node
+                    self.container.append(next_node)
+
         return None
 
-
-    # we need to reverse it, because of stack
+    # Uklanjamo nepotrebne metode
     def update_container(self, node):
-        self.container.extend(list(reversed(self.create_successors(node))))
+        pass
 
-
-    # since stack is used, we pop the element
     def get_next_from_container(self):
-        return self.container.pop()
+        pass
 
 
 # Uses BFS
