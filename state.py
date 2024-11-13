@@ -47,7 +47,7 @@ class State:
              for i in range(0, config.M)])
 
     def __eq__(self, other):
-        return self.get_state() == other.get_state()
+        return self.get_state(Spaceship.kind()) == other.get_state(Spaceship.kind())
 
     def get_state(self, kind=None):
         if kind is None:

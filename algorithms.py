@@ -1,5 +1,4 @@
 import random
-from abc import abstractmethod
 from collections import deque
 
 import config
@@ -24,7 +23,6 @@ class Node:
         child.cost = child.parent.cost + State.get_action_cost(child.action)
         if is_heuristic_algorithm:
             child.cost_heuristic = child.parent.cost_heuristic + self.calc_heuristic(child.state)
-            print(child.cost_heuristic)
 
     def get_actions(self):
         actions = []
@@ -62,7 +60,7 @@ class Node:
         return total_distance
 
 
-    def get_coordinates(self,decimal_number):
+    def get_coordinates(self, decimal_number):
         rows = config.N
         cols = config.M
         num = str(bin(decimal_number))[2:]
@@ -84,7 +82,6 @@ class Algorithm:
 
     def __init__(self):
         self.container = []
-        self._is_heuristic = False
 
     def get_path(self, state):
         self.container = [Node(state, None)]
@@ -92,12 +89,10 @@ class Algorithm:
             node = self.get_next_from_container()
             if node.state.is_goal_state():
                 return node.get_actions()
-
             self.update_container(node)
-
         return None
 
-    def create_successors(self, node):
+    def create_successors(self, node, is_heuristic):
         successors = []
 
         for legal_action in node.state.get_legal_actions():
@@ -107,15 +102,13 @@ class Algorithm:
                 continue
 
             next_node = Node(next_state, legal_action)
-            node.add_child(next_node, self._is_heuristic)
+            node.add_child(next_node, is_heuristic)
             successors.append(next_node)
         return successors
 
-    @abstractmethod
     def update_container(self, node):
         pass
 
-    @abstractmethod
     def get_next_from_container(self):
         pass
 
@@ -131,7 +124,7 @@ class Blue(Algorithm):
         self.container = [start_node]
 
         while self.container:
-            node = self.container.pop()
+            node = self.get_next_from_container()
 
             if node.state.spaceships == node.state.goals:
                 return node.get_actions()
@@ -147,16 +140,15 @@ class Blue(Algorithm):
                 if next_state.spaceships not in self.visited:
                     next_node = Node(next_state, action)
                     next_node.parent = node
-                    self.container.append(next_node)
+                    self.update_container(next_node)
 
         return None
 
-    # Uklanjamo nepotrebne metode
     def update_container(self, node):
-        pass
+        self.container.append(node)
 
     def get_next_from_container(self):
-        pass
+        return self.container.pop()
 
 
 # Uses BFS
@@ -170,7 +162,7 @@ class Red(Algorithm):
         self.container = deque([start_node])
 
         while self.container:
-            node = self.container.popleft()
+            node = self.get_next_from_container()
 
             if node.state.spaceships == node.state.goals:
                 return node.get_actions()
@@ -186,15 +178,15 @@ class Red(Algorithm):
                 if next_state.spaceships not in self.visited:
                     next_node = Node(next_state, action)
                     next_node.parent = node
-                    self.container.append(next_node)
+                    self.update_container(next_node)
 
         return None
 
     def update_container(self, node):
-        pass
+        self.container.append(node)
 
     def get_next_from_container(self):
-        pass
+        return self.container.popleft()
 
 # Uses Branch n bound
 class Black(Algorithm):
@@ -207,7 +199,7 @@ class Black(Algorithm):
         return heapq.heappop(self.container)
 
     def update_container(self, node):
-        successors = self.create_successors(node)
+        successors = self.create_successors(node, False)
 
         for successor in successors:
             state = successor.state
@@ -221,17 +213,15 @@ class Black(Algorithm):
 
 # Uses A*
 class White(Algorithm):
-
     def __init__(self):
         super().__init__()
         self.best_costs = {}
-        _is_heuristic = True
 
     def get_next_from_container(self):
         return heapq.heappop(self.container)
 
     def update_container(self, node):
-        successors = self.create_successors(node)
+        successors = self.create_successors(node, True)
         for successor in successors:
             state = successor.state
             num = state.get_state('S')
@@ -239,7 +229,7 @@ class White(Algorithm):
                 if successor.cost >= self.best_costs[num]:
                     continue
 
-            self.best_costs[num] = successor.cost + successor.cost_heuristic
+            self.best_costs[num] = successor.cost
             heapq.heappush(self.container, successor)
 
 class ExampleAlgorithm(Algorithm):
